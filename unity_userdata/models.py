@@ -1,8 +1,7 @@
-# check PEP import order
+from random import randint
+
 from django.db import models
 import uuid
-
-from random import randint
 
 
 class Game_Session(models.Model):
@@ -17,6 +16,9 @@ class Game_Session(models.Model):
 	level = models.PositiveSmallIntegerField()
 	points = models.PositiveIntegerField()
 	last_accessed = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return f'Player {self.player} in game session {self.id}'
 
 	# need to look up how this is used
 	class Meta:
