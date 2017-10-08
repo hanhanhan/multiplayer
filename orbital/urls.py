@@ -14,11 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
-# from django.contrib import admin
-
+from rest_framework.urlpatterns import format_suffix_patterns
 from unity_userdata import views
 
 urlpatterns = [
-	url(r'^top-players$', views.list_top_scoring_games),
-	url(r'^(?P<player>\d+)/game-session$', views.list_player_game_session),
+	url(r'^top-players$', views.list_top_scoring_players),
+	url(r'^(?P<player>\d+)/game-session$', views.player_game_session),
 ]
+
+urlpatterns = format_suffix_patterns(urlpatterns)

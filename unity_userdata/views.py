@@ -1,27 +1,31 @@
-from django.shortcuts import render, get_object_or_404
-from django.http import Http404, HttpResponse, JsonResponse
+# from django.shortcuts import render, get_object_or_404
+# from django.http import Http404, HttpResponse, JsonResponse
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .serializers import Game_Session_Serializer
 from .models import Game_Session, Player
 
 
-# sort by points, high to low, top 10 results
-def list_top_scoring_games(request):
-	game_sessions = Game_Session.objects.all()
+@api_view(['GET'])
+def list_top_scoring_players(request, format=None):
+	""" Top scoring players
+	"""
+	# How can this query can be done more efficiently?
+	game_sessions = Game_Session.objects.order_by('points').reverse()[:10]
 	serializer = Game_Session_Serializer(game_sessions, many=True)
-	return JsonResponse(serializer.data, safe=False)
+	return Response(serializer.data)
 
 
 # @csrf_exempt #only needed if post is defined w/o authentication
-def list_player_game_session(request, player):
+# urg what is post vs put again?
+@api_view(['GET', 'POST'])
+def player_game_session(request, player, format=None):
 	# if request == 'GET':
+	# may be better to query on Player
 	game_session = Game_Session.objects.get(player=player)
 	# rename class camelcase standard
 	serializer = Game_Session_Serializer(game_session)
-	return JsonResponse(serializer.data, safe=False)
+	return Response(serializer.data)
