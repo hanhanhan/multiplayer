@@ -19,7 +19,6 @@ def list_top_scoring_players(request, format=None):
 	return Response(serializer.data)
 
 
-# @csrf_exempt #only needed if post is defined w/o authentication
 # urg what is post vs put again?
 class PlayerGameSession(APIView):
 	""" Retrieve, update, or delete a player's game sessions.
