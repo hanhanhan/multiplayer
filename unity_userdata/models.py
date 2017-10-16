@@ -1,7 +1,34 @@
 from random import randint
+import uuid
 
 from django.db import models
-import uuid
+# from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+
+
+class Player(AbstractUser):
+	username = models.CharField(max_length=40, primary_key=True)
+	email = models.EmailField(blank=False, unique=True)
+	confirmed = models.BoolField(default=False)
+	USERNAME_FIELD = 'username'
+
+	def generate_confirmation_token(self, expiration=3600):
+		pass
+
+	def __str__(self):
+		return f'Player {self.username}'
+
+	@staticmethod
+	def generate_fake(self, count=20):
+		from faker import Faker
+		fake = Faker()
+		fake.seed_instance(1234)
+		for player in range(count):
+			player = Player()
+			player.username = fake.word() + fake.word()
+			player.email = fake.email()
+			player.password = 'fake'
+			player.save()
 
 
 class Game_Session(models.Model):
@@ -9,7 +36,7 @@ class Game_Session(models.Model):
 	id = models.UUIDField(
 		primary_key=True, default=uuid.uuid4, editable=False)
 	# look up behaviors for on_delete options
-	player = models.ForeignKey('Player', related_name='game_sessions', on_delete=models.CASCADE)
+	player = models.ManyToManyField('Player', related_name='game_sessions')
 	# check range and type in unity
 	x_position = models.BigIntegerField()
 	y_position = models.BigIntegerField()
@@ -28,17 +55,21 @@ class Game_Session(models.Model):
 	def generate_fake(count=20):
 
 		for session in range(count):
-			player = Player()
-			player.save()
+			# get random player from players in db
+			for p in range(count):
+				player = Player.objects.raw(
+					'SELECT * FROM Player; ORDER BY RANDOM(); LIMIT 1'
+				)
+				# player = Player()
+				# player.save()
 
-			x_position = randint(-1000, 1000)
-			y_position = randint(-1000, 1000)
-			level = randint(1, 10)
-			points = randint(0, 100000)
+				x_position = randint(-1000, 1000)
+				y_position = randint(-1000, 1000)
+				level = randint(1, 10)
+				points = randint(0, 100000)
 
-			game_session = Game_Session(player=player, x_position=x_position, y_position=y_position, level=level, points=points)
-			game_session.save()
+				game_session = Game_Session(player=player, x_position=x_position, y_position=y_position, level=level, points=points)
+				game_session.save()
 
 
-class Player(models.Model):
-	pass
+
