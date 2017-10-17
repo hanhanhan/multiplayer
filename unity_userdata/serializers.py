@@ -1,14 +1,16 @@
 from rest_framework import serializers
-from .models import Game_Session, Player
+from .models import GameSession, Player
 
 
 class GameSessionSerializer(serializers.ModelSerializer):
 	class Meta:
-		model = Game_Session
-		fields = ('id', 'player', 'x_position', 'y_position', 'level', 'points')
+		model = GameSession
+		fields = ('game_session_id', 'player', 'x_position', 'y_position', 'level', 'points')
 
 
-class Player_Serializer(serializers.ModelSerializer):
+class PlayerSerializer(serializers.ModelSerializer):
+	game_sessions = serializers.PrimaryKeyRelatedField(many=True, queryset=GameSession.objects.all())
+
 	class Meta:
 		model = Player
-		fields = ('username', 'email', 'password')
+		fields = ('email', 'username', 'game_sessions')

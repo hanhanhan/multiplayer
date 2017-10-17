@@ -3,22 +3,22 @@ from django.http import Http404
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
-
-from rest_framework.authtoken.models import Token
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response 
 # token = Token.objects.create(user=...)
 # http://www.tomchristie.com/rest-framework-2-docs/api-guide/authentication#basicauthentication
-# For clients to authenticate, the token key should be included in the Authorization HTTP header. The key should be prefixed by the string literal "Token", with whitespace separating the two strings. For example:
+# For clients to authenticate, the token key should be included in the Authorization HTTP header. 
+# The key should be prefixed by the string literal "Token", with whitespace separating the two strings. 
+# For example:
 
-from .serializers import Game_Session_Serializer
-from .models import Game_Session
+from .serializers import GameSessionSerializer
+from .models import GameSession, Player
 
 
 @api_view(['POST'])
 def create_player(request):
-	pass
+	username = request['username']
+	email = request['email']
+	Player.objects.create_user()
 
 @api_view(['POST'])
 def login_player(request):

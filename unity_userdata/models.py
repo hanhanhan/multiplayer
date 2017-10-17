@@ -2,21 +2,26 @@ from random import randint
 import uuid
 
 from django.db import models
-# from django.contrib.auth.models import User
 from django.contrib.auth.models import AbstractUser
+# from .managers import UserManager
+
 
 
 class Player(AbstractUser):
-	username = models.CharField(max_length=40, primary_key=True)
-	email = models.EmailField(blank=False, unique=True)
-	confirmed = models.BoolField(default=False)
-	USERNAME_FIELD = 'username'
+	username = models.CharField(max_length=40, unique=True)
+	email = models.EmailField(blank=False, unique=True, primary_key=True)
+	confirmed = models.BooleanField(default=False)
+
+	# Set django auth model to authenticate using email instead of username.
+	USERNAME_FIELD = 'email'
+	REQUIRED_FIELDS = ['username']
+	# objects = UserManager()
 
 	def generate_confirmation_token(self, expiration=3600):
 		pass
 
-	def __str__(self):
-		return f'Player {self.username}'
+	# def __str__(self):
+	# 	return f'Player {self.username}'
 
 	@staticmethod
 	def generate_fake(self, count=20):
@@ -31,12 +36,12 @@ class Player(AbstractUser):
 			player.save()
 
 
-class Game_Session(models.Model):
+class GameSession(models.Model):
 	# or autokey incremented integer
-	id = models.UUIDField(
+	game_session_id = models.UUIDField(
 		primary_key=True, default=uuid.uuid4, editable=False)
 	# look up behaviors for on_delete options
-	player = models.ManyToManyField('Player', related_name='game_sessions')
+	player = models.ForeignKey('Player', related_name='game_sessions')
 	# check range and type in unity
 	x_position = models.BigIntegerField()
 	y_position = models.BigIntegerField()
@@ -46,10 +51,6 @@ class Game_Session(models.Model):
 
 	def __str__(self):
 		return f'Player {self.player} in game session {self.id}'
-
-	# need to look up how this is used
-	class Meta:
-		ordering = ('last_accessed',)
 
 	@staticmethod
 	def generate_fake(count=20):
