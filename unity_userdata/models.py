@@ -6,25 +6,24 @@ from django.contrib.auth.models import AbstractUser
 # from .managers import UserManager
 
 
-
 class Player(AbstractUser):
-	username = models.CharField(max_length=40, unique=True)
-	email = models.EmailField(blank=False, unique=True, primary_key=True)
-	confirmed = models.BooleanField(default=False)
+	# verify username is urlsave -- or change capture group/url displayed for user - or convert to utf8 for url
+	username = models.CharField(max_length=40, unique=True, primary_key=True)
+	email = models.EmailField(blank=False, unique=True)
 
 	# Set django auth model to authenticate using email instead of username.
-	USERNAME_FIELD = 'email'
-	REQUIRED_FIELDS = ['username']
+	USERNAME_FIELD = 'username'
+	REQUIRED_FIELDS = ['email']
 	# objects = UserManager()
 
 	def generate_confirmation_token(self, expiration=3600):
 		pass
 
-	# def __str__(self):
-	# 	return f'Player {self.username}'
+	def __str__(self):
+		return f'Player {self.username}'
 
 	@staticmethod
-	def generate_fake(self, count=20):
+	def generate_fake(count=100):
 		from faker import Faker
 		fake = Faker()
 		fake.seed_instance(1234)
@@ -33,44 +32,50 @@ class Player(AbstractUser):
 			player.username = fake.word() + fake.word()
 			player.email = fake.email()
 			player.password = 'fake'
+			player.is_active = True
 			player.save()
 
 
 class GameSession(models.Model):
 	# or autokey incremented integer
+	# I've seen people using 'id' in classes even though it's a keyword - bad? seems bad.
 	game_session_id = models.UUIDField(
 		primary_key=True, default=uuid.uuid4, editable=False)
-	# look up behaviors for on_delete options
-	player = models.ForeignKey('Player', related_name='game_sessions')
-	# check range and type in unity
-	x_position = models.BigIntegerField()
-	y_position = models.BigIntegerField()
-	level = models.PositiveSmallIntegerField()
-	points = models.PositiveIntegerField()
-	last_accessed = models.DateTimeField(auto_now_add=True)
+	player = models.ManyToManyField(Player, through='GameSession_Player')
 
 	def __str__(self):
-		return f'Player {self.player} in game session {self.id}'
+		return f'Id {self.game_session_id}'
 
 	@staticmethod
-	def generate_fake(count=20):
-
+	def generate_fake(count=10):
 		for session in range(count):
-			# get random player from players in db
-			for p in range(count):
-				player = Player.objects.raw(
-					'SELECT * FROM Player; ORDER BY RANDOM(); LIMIT 1'
-				)
-				# player = Player()
-				# player.save()
-
-				x_position = randint(-1000, 1000)
-				y_position = randint(-1000, 1000)
-				level = randint(1, 10)
-				points = randint(0, 100000)
-
-				game_session = Game_Session(player=player, x_position=x_position, y_position=y_position, level=level, points=points)
-				game_session.save()
+			game_session = GameSession()
+			game_session.save()
 
 
+class GameSession_Player(models.Model):
+	# on_delete=models.Cascade -- I THINK this means if player is deleted, corresponding GameSession_Player entries are deleted
+	player = models.ForeignKey(Player, on_delete=models.CASCADE)
+	game_session = models.ForeignKey(GameSession, on_delete=None)
+	# check range and type in unity
+	x_position = models.BigIntegerField(default=0)
+	y_position = models.BigIntegerField(default=0)
+	points = models.PositiveIntegerField(default=0)
+	date_joined = models.DateTimeField(auto_now_add=True)
+	last_accessed = models.DateTimeField(auto_now=True)
+
+	def __str__(self):
+		return f'Game Session {game_session.game_session_id} with player {player.username}'
+
+	@staticmethod
+	def generate_fake(count=100):
+		for record in range(count):
+			player = Player.objects.order_by('?').first()
+			game_session = GameSession.objects.order_by('?').first()
+			x_position = randint(-1000, 1000)
+			y_position = randint(-1000, 1000)
+			points = randint(0, 1000000)
+			association = GameSession_Player(player=player, game_session=game_session, 
+				x_position=x_position, y_position=y_position, points=points)
+			association.save()
 

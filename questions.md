@@ -17,6 +17,8 @@ http://www.tomchristie.com/rest-framework-2-docs/api-guide/authentication#json-w
 
 internationalization and language
 
+on_delete argument for association table?
+
 -----------------
 
 # Data
@@ -26,6 +28,14 @@ me
 password:
 orbitall
 
+make many to many table with game sessions
+
+# chinese characters
+in username encoding -- utf-16?
+
+verify username is urlsave -- or change capture group/url displayed for user - or convert to utf8 for url w/urllib
+probably doesn't matter if this is for game console - won't see url navigation
+
 
 ---------
 # things I needed to do to create a custom user:
@@ -34,5 +44,20 @@ set
 	REQUIRED_FIELDS = ['username', 'confirmed']
 
 may need custom user manager
+
+ # outline
+
+ create users
+ create game sessions mapped to users
+
+ make sure user can view own settings
+ make sure user can change own settings
+
+ make sure user can't view other person's settings profile
+ make sure user can't change other person's settings profile
+ 
+ repeat for game data!
+
+
 
 

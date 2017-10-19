@@ -3,3 +3,4 @@ orbital/
 */migrations/
 *.pyc
 .vscode
+.env
