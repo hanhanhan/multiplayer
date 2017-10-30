@@ -11,8 +11,7 @@ class GameSessionSerializer(serializers.ModelSerializer):
 
 
 class PlayerSerializer(serializers.ModelSerializer):
-	game_sessions = serializers.PrimaryKeyRelatedField(many=True, queryset=GameSession.objects.all())
-	
+	game_sessions = serializers.PrimaryKeyRelatedField(many=True, queryset=GameSession.objects.all())	
 	
 	class Meta:
 		model = Player

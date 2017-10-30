@@ -1,4 +1,4 @@
-from unity_userdata.models import GameSession, GameSession_Player, Player
+from unity_userdata.models import GameSession, Player_GameSession, Player
 
 Player.generate_fake()
 player = Player.objects.()

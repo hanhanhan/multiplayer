@@ -26,7 +26,7 @@ superuser
 me@me.com
 me
 password:
-orbitall
+fakefake
 
 make many to many table with game sessions
 
@@ -58,6 +58,11 @@ may need custom user manager
  
  repeat for game data!
 
+---
+
+primary key on user -- should username be changeable? reuseable by other players if player changes name?
 
 
+# Password
+eek! I can use player.password in the shell and get it back plaintext!!!!
 

@@ -1,8 +1,11 @@
 from django.http import Http404
 from django.contrib.auth.decorators import login_required, user_passes_test 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404
 
 from rest_framework import status, generics, permissions
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response 
@@ -24,23 +27,46 @@ Player -
 
 """
 # ------- 
-# based on Django Rest tutorial part 4 - authentication and permissions
+def home(request):
+	return Response({'hello':'home page'})
+
+
+@api_view(['GET', 'POST'])
+def player_account(request):
+	import pdb; pdb.set_trace()
+	if request.method == 'GET':
+		player = get_object_or_404(Player, username=request.user)
+
+	player_serializer = PlayerSerializer(player) 
+	
+	return Response(player_serializer.data)
+
+
+# class PlayerAccount(generics.RetrieveAPIView, LoginRequiredMixin, UserPassesTestMixin):
+# 	# For LoginRequiredMixin:
+# 	login_url = '/login/'
+# 	redirect_field_name = 'redirect_to'
+# 	authentication_classes = (TokenAuthentication, BasicAuthentication)
+# 	permission_classes = (IsAuthenticated)
+
+
+# 	# For UserPassesTestMixin:
+# 	def test_func(self):
+# 		# check user is logged in
+# 		return True
+	
+# 	# def get(self):
+# 	# 	pass
+
+
 
 class PlayerList(generics.ListAPIView):
 	queryset = Player.objects.all()
 	serializer_class = PlayerSerializer
 
 
-class PlayerDetail(generics.RetrieveAPIView, LoginRequiredMixin, UserPassesTestMixin):
-	queryset = Player.objects.all()
-	serializer_class = PlayerSerializer
-
-	def test_func(self):
-		return True
-
-
 class GameSessionList(APIView):
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly)
+	# permission_classes = (permissions.IsAuthenticatedOrReadOnly)
 
 	def get(self, request, format=None):
 		game_sessions = GameSession.objects.all()
@@ -91,11 +117,11 @@ def create_player(request):
 	Player.objects.create_user()
 
 @api_view(['POST'])
-def login_player(request):
+def login(request):
 	pass
 
 @api_view()
-def logout_player(request):
+def logout(request):
 	pass
 
 @api_view(['GET'])
