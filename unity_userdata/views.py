@@ -4,11 +4,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
 
 from rest_framework import status, generics, permissions
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from rest_framework.views import APIView
-from rest_framework.response import Response 
+from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer 
 
 # token = Token.objects.create(user=...)
 # http://www.tomchristie.com/rest-framework-2-docs/api-guide/authentication#basicauthentication
@@ -16,30 +17,48 @@ from rest_framework.response import Response
 # The key should be prefixed by the string literal "Token", with whitespace separating the two strings. 
 # For example:
 
-from .serializers import GameSessionSerializer, PlayerSerializer
-from .models import GameSession, Player
+from .serializers import GameSessionSerializer, PlayerSerializer, PlayerGameSessionSerializer
+from .models import GameSession, Player, Player_GameSession
 
 # -------
-""" Views needed:
-Name - Permissions - URL
 
-Player - 
+@api_view(['POST'])
+# whitelist access to token request endpoint by
+# overriding default REST_FRAMEWORK authentications and permissions in settings.py
+@permission_classes(()) 
+@authentication_classes(())
+def api_auth(request):
+	username = request.data.get('username', None)
+	password = request.data.get('password', None)
 
-"""
-# ------- 
-def home(request):
-	return Response({'hello':'home page'})
+	if password is None or username is None:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-
-@api_view(['GET', 'POST'])
-def player_account(request):
-	import pdb; pdb.set_trace()
-	if request.method == 'GET':
-		player = get_object_or_404(Player, username=request.user)
-
-	player_serializer = PlayerSerializer(player) 
+	try:
+		player = Player.objects.get(username=username)
+	except DoesNotExist:
+		return Response(status=status.HTTP_401_UNAUTHORIZED) 
 	
-	return Response(player_serializer.data)
+	if player.check_password(password):
+		# better practice - generate new token
+		data = {'token': player.auth_token.key}
+		return Response(data=data)
+
+	return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET'])
+def profile(request):
+	player_serializer = PlayerSerializer(request.user, context={'request': request}) 
+	data = player_serializer.data
+	return Response(data=data)
+
+
+@api_view(['GET'])
+def player_all_gamesessions(request):
+	player_gamesessions = Player_GameSession.objects.all().filter(player=request.user)
+	player_gamesdata = PlayerGameSessionSerializer(player_gamesessions)
+	return Response(data=player_gamesdata)
 
 
 # class PlayerAccount(generics.RetrieveAPIView, LoginRequiredMixin, UserPassesTestMixin):

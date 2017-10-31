@@ -20,7 +20,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 class Player(AbstractUser):
 	# verify username is urlsave -- or change capture group/url displayed for user - or convert to utf8 for url
-	username = models.CharField(max_length=40, unique=True, primary_key=True)
+	username = models.CharField(max_length=40, unique=True)
 	email = models.EmailField(blank=False, unique=True)
 
 
@@ -44,11 +44,12 @@ class Player(AbstractUser):
 		fake.seed_instance(1234)
 		for player in range(count):
 			player = Player()
+			Player.objects
 			player.username = fake.word() + fake.word()
 			player.email = fake.email()
 			player.set_password(dummy_password)
 			player.is_active = True
-			return player.save()
+			player.save()
 
 
 class GameSession(models.Model):
@@ -65,13 +66,13 @@ class GameSession(models.Model):
 	def generate_fake(count=10):
 		for session in range(count):
 			game_session = GameSession()
-			return game_session.save()
+			game_session.save()
 
 
 class Player_GameSession(models.Model):
 	# on_delete=models.Cascade -- if player is deleted, corresponding GameSession_Player entries are deleted
-	player = models.ForeignKey(Player, on_delete=models.CASCADE)
-	game_session = models.ForeignKey(GameSession, on_delete=None)
+	player = models.ForeignKey(Player, related_name='player_gamesession', on_delete=models.CASCADE)
+	game_session = models.ForeignKey(GameSession, related_name='player_gamesession', on_delete=None)
 	# check range and type in unity
 	x_position = models.BigIntegerField(default=0)
 	y_position = models.BigIntegerField(default=0)
@@ -92,5 +93,5 @@ class Player_GameSession(models.Model):
 			points = randint(0, 1000000)
 			association = Player_GameSession(player=player, game_session=game_session, 
 				x_position=x_position, y_position=y_position, points=points)
-			return association.save()
+			association.save()
 

@@ -29,7 +29,7 @@ class PlayerSettingsTest(TestCase):
         
         self.game_session = GameSession()
         self.game_session.save()
-        self.player_game_session = Player_GameSession.objects.create(game_session=self.game_session, player=self.aleph_player)
+        self.player_gamesession = Player_GameSession.objects.create(game_session=self.game_session, player=self.aleph_player)
         
     def test_login(self):
         pass
@@ -38,9 +38,8 @@ class PlayerSettingsTest(TestCase):
     def test_player_views_own_account_on_GET(self):
         client = Client()
         client.force_login(self.aleph_player)
-        
-        response = client.get('/')
-        import ipdb; ipdb.set_trace()
+        response = client.get('/account/profile')
+        # import pdb; pdb.set_trace()
 
 
     def test_player_POST_doesnt_post_others_settings(self):
