@@ -25,3 +25,8 @@ http http://127.0.0.1:8000/profile 'Authorization: Token bc47610da7f6ee27b059d72
 exad
 http http://127.0.0.1:8000/profile Authorization:'Token bfb0b005602989d5a0c1cd5a4392a0229467465e'
 http POST -a exad:fake http://127.0.0.1:8000/profile 
+
+import requests
+url = 'http://127.0.0.1:8000/profile'
+headers = {'Authorization': 'Token bfb0b005602989d5a0c1cd5a4392a0229467465e'}
+response = requests.get(url, headers=headers)

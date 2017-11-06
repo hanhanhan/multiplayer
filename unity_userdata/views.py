@@ -1,3 +1,5 @@
+import logging
+
 from django.http import Http404
 from django.contrib.auth.decorators import login_required, user_passes_test 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -20,7 +22,7 @@ from rest_framework.renderers import JSONRenderer
 from .serializers import GameSessionSerializer, PlayerSerializer, PlayerGameSessionSerializer
 from .models import GameSession, Player, Player_GameSession
 
-# -------
+logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 # whitelist access to token request endpoint by
@@ -47,35 +49,63 @@ def api_auth(request):
 	return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
-@api_view(['GET'])
-def profile(request):
-	player_serializer = PlayerSerializer(request.user, context={'request': request}) 
-	data = player_serializer.data
-	return Response(data=data)
+
+@api_view(['POST'])
+@permission_classes(()) 
+@authentication_classes(())
+def new_player(request):
+	player_serializer = PlayerSerializer(data=request.data)
+	if player_serializer.is_valid():
+		player_serializer.save()
+		# Should I bother to take out the password below?
+		data = player_serializer.data.pop('password')
+		return Response(player_serializer.data, status=status.HTTP_201_CREATED)
+	else:
+		logger.error(f'New player creation error. POST data: {request.data}, Player Serializer errors: {player_serializer.errors}')
+		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
-def player_all_gamesessions(request):
-	player_gamesessions = Player_GameSession.objects.all().filter(player=request.user)
-	player_gamesdata = PlayerGameSessionSerializer(player_gamesessions)
-	return Response(data=player_gamesdata)
+class Profile(APIView):
+
+	def get(self, request):
+		player_serializer = PlayerSerializer(request.user, context={'request': request}) 
+		data = player_serializer.data
+		return Response(data=data)
+
+	def post(self, request):	
+		player = request.user
+		serializer = PlayerSerializer(player, data=request.data, partial=True)
+		if serializer.is_valid():
+			return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+		else:
+			logger.error(f'Player update error. POST data: {request.data}, Player Serializer errors: {player_serializer.errors}')
+			return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
+
+	def delete(self, request, *args, **kwargs):
+		logger.info(f'User deleted. Username: {request.user.username} Email: {request.user.email}')
+		# Database history? Prevent reuse of username? 
+		request.user.delete()
+		return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# class PlayerAccount(generics.RetrieveAPIView, LoginRequiredMixin, UserPassesTestMixin):
-# 	# For LoginRequiredMixin:
-# 	login_url = '/login/'
-# 	redirect_field_name = 'redirect_to'
-# 	authentication_classes = (TokenAuthentication, BasicAuthentication)
-# 	permission_classes = (IsAuthenticated)
+class GameSessions(APIView):
+
+	def get(self, request):
+		player_gamesessions = Player_GameSession.objects.all().filter(player=request.user)
+		player_gamesdata = PlayerGameSessionSerializer(player_gamesessions)
+
+		return Response(data=player_gamesdata)
+
+	def put(self, request):
+		pass
 
 
-# 	# For UserPassesTestMixin:
-# 	def test_func(self):
-# 		# check user is logged in
-# 		return True
-	
-# 	# def get(self):
-# 	# 	pass
+# allow user to create, update, delete their game session info
+
+# allow user to see all games available
+# allower user to join game
+# allow user to create game
+
 
 
 

@@ -1,3 +1,6 @@
+https://docs.djangoproject.com/en/1.11/ref/validators/#emailvalidator
+Default whitelist for email validation is 'localhost'
+
 # Design Questions
 
 Integrate with other django apps? 

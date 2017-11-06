@@ -22,10 +22,9 @@ class PlayerSerializer(serializers.ModelSerializer):
 	# 	many=True, 
 	# 	read_only=True, 
 	# 	view_name='player_gamesession')
-	
 
 	class Meta:
 		model = Player
-		fields = ('email', 'username', 'player_gamesession')
+		fields = ('email', 'username', 'password')
 
 
