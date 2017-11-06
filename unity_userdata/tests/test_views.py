@@ -30,12 +30,15 @@ class PlayerSettingsTest(TestCase):
         self.player_beta.username = 'bebovaldes'
         self.player_beta.save()
         
-        self.game_session = GameSession()
-        self.game_session.save()
-        self.player_gamesession = Player_GameSession.objects.create(game_session=self.game_session, player=self.player_alpha)
+        self.game_session = GameSession.objects.create()
+        self.player_gamesession = Player_GameSession.objects.create(
+            game_session=self.game_session, 
+            player=self.player_alpha,
+            )
 
         self.client_player_a = Client(HTTP_AUTHORIZATION=f'Token {self.player_alpha.auth_token.key}')
         self.profile_url = reverse('profile')
+
 
     def test_token_retrieval(self):
         client = Client()
@@ -55,7 +58,9 @@ class PlayerSettingsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['token'], self.player_alpha.auth_token.key)
          
-        
+    
+    # Profile related view tests
+    
     def test_new_player_POST_can_create_new_player_on_valid_request(self):
         client = Client()
         url = reverse('new_player')
@@ -103,5 +108,20 @@ class PlayerSettingsTest(TestCase):
         self.assertEqual(response.status_code, 202)
 
 
-    def test_player_creates_new_game(self):
-        pass
+    # GameSession related view tests 
+    
+    def test_player_can_GET_all_sessions_available(self):
+        for i in range(10):
+            GameSession.objects.create()
+
+        url = reverse('game_sessions')
+        response = self.client_player_a.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Response is a special response type I couldn't check like a dictionary
+        # Recommendations for making this less awkward?
+        id_string = str(self.game_session.game_session_id)
+        id_bytes = bytes(id_string, 'UTF-8')
+        self.assertIn(id_bytes, response.rendered_content)
+
+

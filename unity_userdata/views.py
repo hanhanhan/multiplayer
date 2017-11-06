@@ -13,21 +13,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer 
 
-# token = Token.objects.create(user=...)
-# http://www.tomchristie.com/rest-framework-2-docs/api-guide/authentication#basicauthentication
-# For clients to authenticate, the token key should be included in the Authorization HTTP header. 
-# The key should be prefixed by the string literal "Token", with whitespace separating the two strings. 
-# For example:
-
 from .serializers import GameSessionSerializer, PlayerSerializer, PlayerGameSessionSerializer
 from .models import GameSession, Player, Player_GameSession
 
 logger = logging.getLogger(__name__)
 
+# Default REST_FRAMEWORK authentications and permissions are in in settings.py
+# access to unrestricted endpoints must be whitelisted by setting permission, authentication by view
+
 @api_view(['POST'])
-# whitelist access to token request endpoint by
-# overriding default REST_FRAMEWORK authentications and permissions in settings.py
-@permission_classes(()) 
+@permission_classes(())
 @authentication_classes(())
 def api_auth(request):
 	username = request.data.get('username', None)
@@ -47,7 +42,6 @@ def api_auth(request):
 		return Response(data=data)
 
 	return Response(status=status.HTTP_401_UNAUTHORIZED)
-
 
 
 @api_view(['POST'])
@@ -89,6 +83,19 @@ class Profile(APIView):
 
 
 class GameSessions(APIView):
+	
+	def get(self, request):
+		# import pdb; pdb.set_trace()
+		gamesessions = GameSession.objects.all()
+		serializer = GameSessionSerializer(gamesessions, many=True)
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+	def post(self, request):
+		pass
+
+
+
+class PlayerGameSessions(APIView):
 
 	def get(self, request):
 		player_gamesessions = Player_GameSession.objects.all().filter(player=request.user)
@@ -100,6 +107,9 @@ class GameSessions(APIView):
 		pass
 
 
+@api_view
+def player_all_game_sessions(request):
+	pass
 # allow user to create, update, delete their game session info
 
 # allow user to see all games available

@@ -7,7 +7,7 @@ class GameSessionSerializer(serializers.ModelSerializer):
 	
 	class Meta:
 		model = GameSession
-		fields = ('game_session_id', 'player', 'x_position', 'y_position', 'level', 'points')
+		fields = '__all__'
 
 
 class PlayerGameSessionSerializer(serializers.ModelSerializer):
