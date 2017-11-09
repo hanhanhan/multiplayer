@@ -36,6 +36,12 @@ class PlayerSettingsTest(TestCase):
             player=self.player_alpha,
             )
 
+
+        self.player_gamesession = Player_GameSession.objects.create(
+            game_session=self.game_session, 
+            player=self.player_beta, 
+            )
+
         self.client_player_a = Client(HTTP_AUTHORIZATION=f'Token {self.player_alpha.auth_token.key}')
         self.profile_url = reverse('profile')
 
@@ -69,8 +75,8 @@ class PlayerSettingsTest(TestCase):
         username = 'NewPlayr'
         data = {'email':email, 'username':username, 'password':'fake'}
         json_data = json.dumps(data)
-        response = client.post(path=url, data=json_data, content_type='application/json')
         
+        response = client.post(path=url, data=json_data, content_type='application/json')        
         self.assertEqual(response.status_code, 201)
 
         queried_player = Player.objects.get(username=username)
@@ -78,15 +84,18 @@ class PlayerSettingsTest(TestCase):
 
         incomplete_data = data.pop('email')
         incomplete_json_data = json.dumps(incomplete_data)
+        
+        print("Error logging from test prints to console:")
         response = client.post(path=url, data=incomplete_json_data, content_type='application/json')
+        print("Log complete. \n")
         self.assertEqual(response.status_code, 400)
 
 
     def test_player_views_own_account_with_valid_token_only_on_GET(self):  
         auth_token = f'Token {self.player_alpha.auth_token.key}'
         client = Client()
-
         invalid_token = 'Token not_a_valid_token'
+        
         response = self.client.get(self.profile_url, HTTP_AUTHORIZATION=invalid_token)
         self.assertEqual(response.status_code, 401)
         
@@ -109,19 +118,77 @@ class PlayerSettingsTest(TestCase):
 
 
     # GameSession related view tests 
-    
+
     def test_player_can_GET_all_sessions_available(self):
         for i in range(10):
             GameSession.objects.create()
 
         url = reverse('game_sessions')
+        
+        response = self.client_player_a.get(url)
+        game_session_id = str(self.game_session.game_session_id)
+        self.assertContains(response, game_session_id)
+
+
+    def test_player_POST_can_create_new_game_session(self):
+        url = reverse('game_sessions')
+        
+        response = self.client_player_a.post(url)
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('x_position', response.data)
+        self.assertContains(response, text='x_position', status_code=201)
+
+
+    # Player_GameSession related view tests
+
+    def test_player_GET_all_own_game_sessions(self):
+        url = reverse('player_all_game_sessions')
+        
         response = self.client_player_a.get(url)
         self.assertEqual(response.status_code, 200)
+
+        game_sessions = GameSession.objects.all().filter(player=self.player_alpha)
+        for session in game_sessions:
+            session_id = str(session.game_session_id)
+            self.assertContains(response, text=session_id)
+
+        unused_session = GameSession.objects.create()
+        unused_session_id = str(unused_session.game_session_id)
+        self.assertNotContains(response, text=unused_session_id)
+
+
+    def test_player_GET_sees_game_session_data(self):
+        url = reverse('player_game_session')
+        game_session = str(self.game_session.game_session_id)
+        data = {'game_session': game_session}
+        json_data = json.dumps(data)
         
-        # Response is a special response type I couldn't check like a dictionary
-        # Recommendations for making this less awkward?
-        id_string = str(self.game_session.game_session_id)
-        id_bytes = bytes(id_string, 'UTF-8')
-        self.assertIn(id_bytes, response.rendered_content)
+        response = self.client_player_a.post(url, json_data, content_type='application/json')
+        self.assertContains(response, text=game_session)
+        # NOTE: Add check that player_beta is returned -- player data for all players needed
+        
+
+    def test_player_PUT_updates_game_session_data(self):
+        url = reverse('player_game_session')
+
+        keys = ['x_position', 'y_position', 'points']
+        values = [101, 501, 12001]
+        data = dict(zip(keys, values))
+        data['game_session'] = str(self.game_session.game_session_id)
+        json_data = json.dumps(data)
+
+        response = self.client_player_a.put(url, json_data, content_type='application/json')
+        self.assertContains(response, text='"x_position":101,"y_position":501,"points":12001', status_code=202)
 
 
+    def test_player_DELETE_removes_player_from_game_session(self):
+        url = reverse('player_game_session')
+        session_id = str(self.game_session.game_session_id)
+        data = {'game_session': session_id}
+        json_data = json.dumps(data)
+        
+
+        response = self.client_player_a.delete(url, json_data, content_type='application/json')
+        
+        removed_session = Player_GameSession.objects.all().filter(game_session=session_id, player=self.player_alpha).first()
+        self.assertEqual(removed_session, None)

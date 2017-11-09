@@ -1,3 +1,7 @@
+# TODO:
+# consider updating gets -> post
+# check all players are returned for game_session play
+
 import logging
 
 from django.http import Http404
@@ -25,6 +29,8 @@ logger = logging.getLogger(__name__)
 @permission_classes(())
 @authentication_classes(())
 def api_auth(request):
+	""" Post username/password to get token. Whitelisted endpoint.
+	"""
 	username = request.data.get('username', None)
 	password = request.data.get('password', None)
 
@@ -51,7 +57,7 @@ def new_player(request):
 	player_serializer = PlayerSerializer(data=request.data)
 	if player_serializer.is_valid():
 		player_serializer.save()
-		# Should I bother to take out the password below?
+		# QUESTION: Should I bother to take out the password below?
 		data = player_serializer.data.pop('password')
 		return Response(player_serializer.data, status=status.HTTP_201_CREATED)
 	else:
@@ -77,7 +83,7 @@ class Profile(APIView):
 
 	def delete(self, request, *args, **kwargs):
 		logger.info(f'User deleted. Username: {request.user.username} Email: {request.user.email}')
-		# Database history? Prevent reuse of username? 
+		# QUESTION: Is this tracked in database history? Prevent reuse of username in database or here? 
 		request.user.delete()
 		return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -85,140 +91,78 @@ class Profile(APIView):
 class GameSessions(APIView):
 	
 	def get(self, request):
-		# import pdb; pdb.set_trace()
+		""" See all game sessions available.
+		"""
 		gamesessions = GameSession.objects.all()
 		serializer = GameSessionSerializer(gamesessions, many=True)
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+
 	def post(self, request):
-		pass
+		""" Individual player joins game session with default start values. 
+		"""
+		game_session = GameSession.objects.create()
+		player_gamesession = Player_GameSession(player=request.user, game_session=game_session)
+		serializer = PlayerGameSessionSerializer(player_gamesession)
+		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
+@api_view(['GET'])
+def player_all_game_sessions(request):
+	""" See all game sessions a player belongs to.
+	"""
+	player__game_sessions = Player_GameSession.objects.all().filter(player=request.user)
+	serializer = PlayerGameSessionSerializer(player__game_sessions, many=True)
+	return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-class PlayerGameSessions(APIView):
 
-	def get(self, request):
-		player_gamesessions = Player_GameSession.objects.all().filter(player=request.user)
-		player_gamesdata = PlayerGameSessionSerializer(player_gamesessions)
+class PlayerGameSession(APIView):
 
-		return Response(data=player_gamesdata)
+	def post(self, request):
+		""" See all players in game session.
+		"""
+		game_session = request.data['game_session']
+		game_session_all_players = Player_GameSession.objects.all().filter(game_session=game_session)
+	
+		serializer = PlayerGameSessionSerializer(game_session_all_players, many=True)
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
+
 
 	def put(self, request):
-		pass
-
-
-@api_view
-def player_all_game_sessions(request):
-	pass
-# allow user to create, update, delete their game session info
-
-# allow user to see all games available
-# allower user to join game
-# allow user to create game
-
-
-
-
-class PlayerList(generics.ListAPIView):
-	queryset = Player.objects.all()
-	serializer_class = PlayerSerializer
-
-
-class GameSessionList(APIView):
-	# permission_classes = (permissions.IsAuthenticatedOrReadOnly)
-
-	def get(self, request, format=None):
-		game_sessions = GameSession.objects.all()
-		serializer = GameSessionSerializer(game_sessions, many=True)
-		return Response(serializer.data)
-
-	def perform_create(self, serializer):
-		serializer.save(owner=self.request.user)
-
-	def post(self, request, format=None):
-		serializer = GameSessionSerializer(data=request.data)
+		""" Update individual player's game play in game session.
+		"""
+		game_session = request.data['game_session']
+		data = {}
+		data['x_position'] = request.data['x_position']
+		data['y_position'] = request.data['y_position']
+		data['points'] = request.data['points']
+		player__game_session = Player_GameSession.objects.get(game_session=game_session, player=request.user)
+		serializer = PlayerGameSessionSerializer(player__game_session, data=data, partial=True)
 		if serializer.is_valid():
 			serializer.save()
-			return Response(serializer.data, status=status.HTTP_201_CREATED)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+			return Response(data=serializer.data, status=status.HTTP_202_ACCEPTED)
+		else:
+			logger.error(f'Update error for player\'s game session. PUT data: {request.data}, PlayerGameSessionSerializer errors: {serializer.errors}')
+			return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class GameSessionDetail(APIView):
-	permission_classes = (permissions.IsAuthenticatedOrReadOnly)
-	def get_object(self, username):
-		try:
-			return GameSession.objects.get(username=username)
-		except GameSession.DoesNotExist:
-			raise Http404
-
-	def get(self, request, username, format=None):
-		game_session = self.get_object(username)
-		serializer = GameSessionSerializer(game_session)
-
-	def put(self, request, username, format=None):
-		game_session = self.get_object(username)
-		serializer = GameSessionSerializer(game_session)
-		return Response(serializer.data)
-
-	def delete(self, request, username, format=None):
-		game_session = self.get_object(username)
-		game_session.delete()
+	def delete(self, request):
+		""" Remove individual player from game.
+		"""
+		game_session = request.data['game_session']
+		player__game_session = Player_GameSession.objects.all().filter(game_session=game_session, player=request.user)
+		logger.info(f'Player\'s game session deleted. Username: {request.user.username} from {game_session}')
+		player__game_session.delete()
 		return Response(status=status.HTTP_204_NO_CONTENT)
 
-	
-
-
-# -------
-@api_view(['POST'])
-def create_player(request):
-	username = request['username']
-	email = request['email']
-	Player.objects.create_user()
-
-@api_view(['POST'])
-def login(request):
-	pass
-
-@api_view()
-def logout(request):
-	pass
 
 @api_view(['GET'])
 def list_top_scoring_players(request, format=None):
 	""" Top scoring players
 	"""
-	# How can this query can be done more efficiently?
+	# QUESTION: How can this query can be done more efficiently?
 	game_sessions = GameSession.objects.order_by('points').reverse()[:10]
 	serializer = GameSessionSerializer(game_sessions, many=True)
 	return Response(serializer.data)
 
-
-class PlayerGameSession(APIView):
-	""" Retrieve, update, or delete a player's game sessions.
-	"""
-
-	def get_object(self, player):
-		# may be better to query on Player
-		try:
-			return GameSession.objects.get(player=player)
-		except GameSession.DoesNotExist:
-			raise Http404
-
-	def get(self, request, player, format=None):
-		game_session = self.get_object(player)
-		serializer = GameSessionSerializer(game_session)
-		return Response(serializer.data)
-
-	def put(self, request, player, format=None):
-		game_session = self.get_object(player)
-		serializer = GameSessionSerializer(game_session, data=request.data)
-		if serializer.is_valid():
-			serializer.save()
-			return Response(serializer.data, status=status.HTTP_201_CREATED)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-	def delete(self, request, player, format=None):
-		game_session = self.get_object(player)
-		game_session.delete()
-		return Response(status=status.HTTP_204_NO_CONTENT)
 
