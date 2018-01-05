@@ -7,9 +7,9 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
-# from .managers import UserManager
 
 dummy_password = 'fake'
+
 
 # Signal to generate user token post-save
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
@@ -53,8 +53,7 @@ class Player(AbstractUser):
 
 
 class GameSession(models.Model):
-	# or autokey incremented integer
-	# I've seen people using 'id' in classes even though it's a keyword - bad? seems bad.
+
 	game_session_id = models.UUIDField(
 		primary_key=True, default=uuid.uuid4, editable=False)
 	player = models.ManyToManyField(Player, through='Player_GameSession')

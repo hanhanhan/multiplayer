@@ -1,7 +1,3 @@
-# TODO:
-# consider updating gets -> post
-# check all players are returned for game_session play
-
 import logging
 
 from django.http import Http404
@@ -41,9 +37,8 @@ def api_auth(request):
 		player = Player.objects.get(username=username)
 	except DoesNotExist:
 		return Response(status=status.HTTP_401_UNAUTHORIZED) 
-	
+
 	if player.check_password(password):
-		# better practice - generate new token
 		data = {'token': player.auth_token.key}
 		return Response(data=data)
 
@@ -83,7 +78,6 @@ class Profile(APIView):
 
 	def delete(self, request, *args, **kwargs):
 		logger.info(f'User deleted. Username: {request.user.username} Email: {request.user.email}')
-		# QUESTION: Is this tracked in database history? Prevent reuse of username in database or here? 
 		request.user.delete()
 		return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -123,10 +117,9 @@ class PlayerGameSession(APIView):
 		"""
 		game_session = request.data['game_session']
 		game_session_all_players = Player_GameSession.objects.all().filter(game_session=game_session)
-	
+
 		serializer = PlayerGameSessionSerializer(game_session_all_players, many=True)
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
-
 
 	def put(self, request):
 		""" Update individual player's game play in game session.
@@ -144,7 +137,6 @@ class PlayerGameSession(APIView):
 		else:
 			logger.error(f'Update error for player\'s game session. PUT data: {request.data}, PlayerGameSessionSerializer errors: {serializer.errors}')
 			return Response(status=status.HTTP_400_BAD_REQUEST)
-
 
 	def delete(self, request):
 		""" Remove individual player from game.
