@@ -2,7 +2,7 @@ certifi==2017.11.5
 chardet==3.0.4
 Django==1.11.3
 django-oauth2-provider==0.2.6.1
-djangorestframework==3.6.4
+djangorestframework==3.11.2
 Faker==0.8.4
 idna==2.6
 Markdown==2.6.9
