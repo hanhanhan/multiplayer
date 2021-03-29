@@ -6,7 +6,7 @@ djangorestframework==3.6.4
 Faker==0.8.4
 idna==2.6
 Markdown==2.6.9
-Pygments==2.2.0
+Pygments==2.7.4
 python-dateutil==2.6.1
 pytz==2017.2
 requests==2.18.4
